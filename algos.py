@@ -155,7 +155,7 @@ def Qtesting1_iter(s):
     return p.astype(np.int32), group,num
 
 def Qtesting1(s):
-    if sum(s)/len(s) > 0.25:
+    if sum(s)/len(s) > 0.2:
         num, stages, _ = naive_testing(s)
         return num, stages
 
