@@ -166,8 +166,9 @@ def Qtesting1_iter(s):
     return p.astype(np.int32), group,num
 
 def Qtesting1(s):
+    # This is technically a test but I account for it within optimized_naive_testing (instead of passing a parameter)
     if sum(s)/len(s) > 0.2:
-        num, stages, _ = naive_testing(s)
+        num, stages, _ = optimized_naive_testing(s)
         return num, stages
 
     # s(np.array): binary string of infection status
