@@ -12,7 +12,7 @@ def naive_testing(s):
     proportion_of_positive_tests = sum(s)/len(s)
     num+=1
     
-    if(proportion_of_positive_tests >= 0.5):
+    if(proportion_of_positive_tests <= 0.5):
       new_s = np.zeros(len(s))
       for i in range(len(s)):
           if s[i] == 1:
