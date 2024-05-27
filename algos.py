@@ -1,5 +1,10 @@
+from infect import infect
 import numpy as np
 import random
+import networkx as nx
+from sbm import SBM
+import matplotlib.pyplot as plt
+
 
 
 def naive_testing(s):
@@ -209,21 +214,90 @@ def Qtesting2(s):
 
 
 
-def Qtesting1_comm_aware(s,communities):
+def Qtesting1_comm_aware(s, communities):
     '''
     s(np.array): binary string of infection status
     communities(list): the community information
     '''
     num_tests = 0
     stages = 0
-    ###################################################
-    '''your code here'''
 
-    ###################################################
+    return num_tests, stages
 
+# Main function to compare the performance with binary, diagonal, and naive testing
+def main():
+    infection_probabilities = np.linspace(0.01, 0.3, 30)
+    num_tests_naive = []
+    num_tests_binary = []
+    num_tests_diag = []
+    num_tests_q1_comm_aware = []
+    stages_naive = []
+    stages_binary = []
+    stages_diag = []
+    stages_q1_comm_aware = []
 
+    N = 50  # Total number of nodes
+    M = 5   # Number of communities
+    q0 = 0.8  # Intra-community connection probability
+    q1 = 0.1  # Inter-community connection probability
+    G = SBM(N, M, q0, q1)
+    adj_matrix = nx.to_numpy_array(G)
 
-    return num_tests,stages
+    communities = []
+    for community in nx.connected_components(G):
+        communities.append(list(community))
+
+    for p in infection_probabilities:
+        array = np.random.choice([0, 1], size=N, p=[1 - p, p])
+
+        num, stages, _ = naive_testing(array)
+        num_tests_naive.append(num)
+        stages_naive.append(stages)
+
+        num, stages, _ = binary_splitting(array)
+        num_tests_binary.append(num)
+        stages_binary.append(stages)
+
+        num, stages = diag_splitting(array)
+        num_tests_diag.append(num)
+        stages_diag.append(stages)
+
+        num, stages = Qtesting1_comm_aware(array, communities)
+        num_tests_q1_comm_aware.append(num)
+        stages_q1_comm_aware.append(stages)
+
+    plt.figure(figsize=(16, 8))
+
+    # Plot Number of Tests
+    plt.subplot(1, 2, 1)
+    plt.plot(infection_probabilities, num_tests_naive, label="Naive Testing", color='blue')
+    plt.plot(infection_probabilities, num_tests_binary, label="Binary Splitting", color='orange')
+    plt.plot(infection_probabilities, num_tests_diag, label="Diagonal Splitting", color='green')
+    plt.plot(infection_probabilities, num_tests_q1_comm_aware, label="Q1 Testing (Comm Aware)", color='red')
+    plt.xlabel("Infection Probability")
+    plt.ylabel("Number of Tests")
+    plt.title("Number of Tests vs Infection Probability")
+    plt.legend()
+    plt.grid(True)
+
+    # Plot Number of Stages
+    plt.subplot(1, 2, 2)
+    plt.plot(infection_probabilities, stages_naive, label="Naive Testing", color='blue')
+    plt.plot(infection_probabilities, stages_binary, label="Binary Splitting", color='orange')
+    plt.plot(infection_probabilities, stages_diag, label="Diagonal Splitting", color='green')
+    plt.plot(infection_probabilities, stages_q1_comm_aware, label="Q1 Testing (Comm Aware)", color='red')
+    plt.xlabel("Infection Probability")
+    plt.ylabel("Number of Stages")
+    plt.title("Number of Stages vs Infection Probability")
+    plt.legend()
+    plt.grid(True)
+
+    plt.tight_layout()
+    plt.show()
+
+if __name__ == "__main__":
+    main()
+
 
 def Qtesting2_comm_aware(s,communities):
     '''
