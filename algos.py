@@ -3,6 +3,17 @@ import random
 
 
 def naive_testing(s):
+    num = 0
+    stages = 1
+    new_s = np.zeros(len(s))
+    for i in range(len(s)):
+        if s[i] == 1:
+            new_s[i] = 1
+        num += 1
+    return num, stages, new_s
+
+
+def optimized_naive_testing(s):
     # Fix test count
     num = 0
     stages = 1
