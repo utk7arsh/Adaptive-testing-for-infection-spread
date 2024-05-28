@@ -196,21 +196,79 @@ def Qtesting1(s):
                 flag = 1
     return num_tests,stages
 
+def map_to_range(num_infected):
+    if num_infected == 0:
+        return 0
+    elif 1 <= num_infected < 2:
+        return 1
+    elif 2 <= num_infected < 4:
+        return 2
+    elif 4 <= num_infected < 8:
+        return 3
+    else:
+        return 4
+
+
+def Qtesting2_iter(s):
+    k = int(np.log2(len(s)))
+    l = int(2**(k-1))
+    lp = 0
+    p = np.zeros(k+1, dtype=int)
+    group = dict()
+    num = np.ones(k+1, dtype=int)
+
+    for i in range(k):
+        num_infected = sum(s[lp:lp+l])
+        p[i] = map_to_range(num_infected)
+        group[i] = s[lp:lp+l]
+        num[i] = l
+        lp += l
+        l //= 2
+
+    num_infected = s[-1]
+    p[k] = map_to_range(num_infected)
+    group[k] = np.array([s[-1]])
+
+    return p, group, num
+
+
+def range_proportion(p):
+    # Map the ranges to an approximate proportion
+    range_to_proportion = {
+        0: 0,
+        1: 0.05,
+        2: 0.15,
+        3: 0.35,
+        4: 0.5
+    }
+    return range_to_proportion[p]
 
 def Qtesting2(s):
-    '''
-    s(np.array): binary string of infection status
-    '''
+    pattern, group, nums = Qtesting2_iter(s)
+    # Calculate the average proportion based on the ranges
+    avg_proportion = np.mean([range_proportion(p) for p in pattern])
+    
+    # Use a threshold based on the average proportion to switch to optimized naive testing
+    if avg_proportion > 0.2:
+        num, stages, _ = optimized_naive_testing(s)
+        return num, stages
+
     num_tests = 0
     stages = 0
-    ###################################################
-    '''your code here'''
+    stages += 1
+    num_tests += len(pattern)
 
-    ###################################################
+    indices = np.where(pattern > 0)[0]
+    flag = 0
+    for i in indices:
+        if nums[i] > 1:
+            num_test, stage = Qtesting2(group[i])
+            num_tests += num_test
+            if not flag:
+                stages += stage
+                flag = 1
 
-
-
-    return num_tests,stages
+    return num_tests, stages
 
 
 
@@ -221,11 +279,42 @@ def Qtesting1_comm_aware(s, communities):
     '''
     num_tests = 0
     stages = 0
+    
+    # Create an interaction graph based on the SBM
+    interaction_graph = nx.Graph()
+    for community in communities:
+        for node in community:
+            interaction_graph.add_node(node)
+        for i, node in enumerate(community):
+            for j in range(i + 1, len(community)):
+                interaction_graph.add_edge(node, community[j])
+
+    # intra community
+    for community in communities:
+        sub_s = s[community]
+        if sum(sub_s) / len(sub_s) > 0.2:
+            num, stage, _ = optimized_naive_testing(sub_s)
+        else:
+            num, stage = Qtesting1(sub_s)
+        num_tests += num
+        stages = max(stages, stage)
+        s[community] = sub_s
+
+    # Inter-community testing
+    for node in range(len(s)):
+        if s[node] == 1:
+            neighbors = list(interaction_graph.neighbors(node))
+            neighbor_status = s[neighbors]
+            if sum(neighbor_status) > 0.2 * len(neighbor_status):
+                num, stage, _ = optimized_naive_testing(neighbor_status)
+                num_tests += num
+                stages = max(stages, stage)
+                s[neighbors] = neighbor_status
 
     return num_tests, stages
 
 # Main function to compare the performance with binary, diagonal, and naive testing
-def main():
+#def main():
     infection_probabilities = np.linspace(0.01, 0.3, 30)
     num_tests_naive = []
     num_tests_binary = []
@@ -238,19 +327,21 @@ def main():
 
     N = 50  # Total number of nodes
     M = 5   # Number of communities
-    q0 = 0.8  # Intra-community connection probability
-    q1 = 0.1  # Inter-community connection probability
+    q0 = 1  # Intra-community connection probability
+    q1 = 0  # Inter-community connection probability
     G = SBM(N, M, q0, q1)
     adj_matrix = nx.to_numpy_array(G)
 
     communities = []
     for community in nx.connected_components(G):
         communities.append(list(community))
+    
+    print("communities: ", communities)
 
     for p in infection_probabilities:
         array = np.random.choice([0, 1], size=N, p=[1 - p, p])
 
-        num, stages, _ = naive_testing(array)
+        num, stages, _ = optimized_naive_testing(array)
         num_tests_naive.append(num)
         stages_naive.append(stages)
 
@@ -295,10 +386,6 @@ def main():
     plt.tight_layout()
     plt.show()
 
-if __name__ == "__main__":
-    main()
-
-
 def Qtesting2_comm_aware(s,communities):
     '''
     s(np.array): binary string of infection status
@@ -314,3 +401,10 @@ def Qtesting2_comm_aware(s,communities):
 
 
     return num_tests,stages
+
+
+
+if __name__ == "__main__":
+    main()
+
+
