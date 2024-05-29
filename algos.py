@@ -180,7 +180,7 @@ def range_proportion(num_infected, group_size):
     elif 4 <= num_infected < 8:
         return 6 / group_size
     else:
-        return 8 / group_size
+        return 0.5
 
 def Qtesting2_iter(s):
     k = int(np.log2(len(s)))
@@ -321,23 +321,22 @@ def Qtesting1_comm_aware(s, communities):
 
 
 ########################################### Q2 comm aware
-def Qtesting2_comm_aware(s,communities):
+def Qtesting2_comm_aware(s, communities):
     '''
     s(np.array): binary string of infection status
     communities(list): the community information
     '''
     num_tests = 0
     stages = 0
-    ###################################################
-    '''your code here'''
+    communities = np.array(communities)
+    s = np.array(s)
 
-    ###################################################
+    for community in communities:
+        temp_tests, temp_stages = Qtesting2(s[community])
+        num_tests += temp_tests
+        stages = max(temp_stages, stages)
 
-
-
-    return num_tests,stages
-
-
+    return num_tests, stages
 
 if __name__ == "__main__":
     main()
