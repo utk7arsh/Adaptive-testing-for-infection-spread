@@ -6,47 +6,6 @@ from sbm import SBM
 import matplotlib.pyplot as plt
 
 
-
-def naive_testing(s):
-    num = 0
-    stages = 1
-    new_s = np.zeros(len(s))
-    for i in range(len(s)):
-        if s[i] == 1:
-            new_s[i] = 1
-        num += 1
-    return num, stages, new_s
-
-
-def optimized_naive_testing(s):
-    # Fix test count
-    num = 0
-    stages = 1
-    positive_tests = 0
-    negative_tests = 0
-
-    proportion_of_positive_tests = sum(s)/len(s)
-    num+=1
-    
-    if(proportion_of_positive_tests <= 0.5):
-      new_s = np.zeros(len(s))
-      for i in range(len(s)):
-          if s[i] == 1:
-            new_s[i] = 1
-            positive_tests += 1
-          num+=1
-          if positive_tests==sum(s): break
-    else:
-      new_s = np.ones(len(s))
-      for i in range(len(s)):
-          if s[i] == 0:
-            new_s[i] = 0
-            negative_tests += 1
-          num+=1
-          if negative_tests==(len(s)-sum(s)): break
-
-    return num, stages, new_s
-
 # binary spliting
 def binary_splitting_round(s):
     # s: np.array the infectious status & test status
@@ -143,6 +102,7 @@ def diag_splitting(s):
                 flag = 1
     return num_tests,stages
 
+########################### Q1
 def Qtesting1_iter(s):
     # s(np.array): binary string of infection status
     # Ex: [1,0,0,1,0,0,1,0]
@@ -196,6 +156,7 @@ def Qtesting1(s):
                 flag = 1
     return num_tests,stages
 
+####################################### Q2
 def map_to_range(num_infected):
     if num_infected == 0:
         return 0
@@ -208,6 +169,18 @@ def map_to_range(num_infected):
     else:
         return 4
 
+def range_proportion(num_infected, group_size):
+    # Map the number of infected to an approximate proportion
+    if num_infected == 0:
+        return 0.0
+    elif 1 <= num_infected < 2:
+        return 1 / group_size
+    elif 2 <= num_infected < 4:
+        return 3 / group_size
+    elif 4 <= num_infected < 8:
+        return 6 / group_size
+    else:
+        return 8 / group_size
 
 def Qtesting2_iter(s):
     k = int(np.log2(len(s)))
@@ -231,30 +204,11 @@ def Qtesting2_iter(s):
 
     return p, group, num
 
-
-def range_proportion(p):
-    # Map the ranges to an approximate proportion
-    range_to_proportion = {
-        0: 0,
-        1: 0.05,
-        2: 0.15,
-        3: 0.35,
-        4: 0.5
-    }
-    return range_to_proportion[p]
-
 def Qtesting2(s):
-    pattern, group, nums = Qtesting2_iter(s)
-    # Calculate the average proportion based on the ranges
-    avg_proportion = np.mean([range_proportion(p) for p in pattern])
-    
-    # Use a threshold based on the average proportion to switch to optimized naive testing
-    if avg_proportion > 0.2:
-        num, stages, _ = optimized_naive_testing(s)
-        return num, stages
-
     num_tests = 0
     stages = 0
+
+    pattern, group, nums = Qtesting2_iter(s)
     stages += 1
     num_tests += len(pattern)
 
@@ -262,7 +216,11 @@ def Qtesting2(s):
     flag = 0
     for i in indices:
         if nums[i] > 1:
-            num_test, stage = Qtesting2(group[i])
+            proportion = range_proportion(sum(group[i]), nums[i])
+            if proportion > 0.2:
+                num_test, stage, _ = optimized_naive_testing(group[i])
+            else:
+                num_test, stage = Qtesting2(group[i])
             num_tests += num_test
             if not flag:
                 stages += stage
@@ -270,8 +228,7 @@ def Qtesting2(s):
 
     return num_tests, stages
 
-
-
+########################################### Q1 comm aware
 def Qtesting1_comm_aware(s, communities):
     '''
     s(np.array): binary string of infection status
@@ -279,37 +236,13 @@ def Qtesting1_comm_aware(s, communities):
     '''
     num_tests = 0
     stages = 0
-    
-    # Create an interaction graph based on the SBM
-    interaction_graph = nx.Graph()
-    for community in communities:
-        for node in community:
-            interaction_graph.add_node(node)
-        for i, node in enumerate(community):
-            for j in range(i + 1, len(community)):
-                interaction_graph.add_edge(node, community[j])
+    communities = np.array(communities)
+    s = np.array(s)
 
-    # intra community
     for community in communities:
-        sub_s = s[community]
-        if sum(sub_s) / len(sub_s) > 0.2:
-            num, stage, _ = optimized_naive_testing(sub_s)
-        else:
-            num, stage = Qtesting1(sub_s)
-        num_tests += num
-        stages = max(stages, stage)
-        s[community] = sub_s
-
-    # Inter-community testing
-    for node in range(len(s)):
-        if s[node] == 1:
-            neighbors = list(interaction_graph.neighbors(node))
-            neighbor_status = s[neighbors]
-            if sum(neighbor_status) > 0.2 * len(neighbor_status):
-                num, stage, _ = optimized_naive_testing(neighbor_status)
-                num_tests += num
-                stages = max(stages, stage)
-                s[neighbors] = neighbor_status
+        temp_tests, temp_stages = Qtesting1(s[community])
+        num_tests += temp_tests
+        stages = max(temp_stages,stages)
 
     return num_tests, stages
 
@@ -386,6 +319,8 @@ def Qtesting1_comm_aware(s, communities):
     plt.tight_layout()
     plt.show()
 
+
+########################################### Q2 comm aware
 def Qtesting2_comm_aware(s,communities):
     '''
     s(np.array): binary string of infection status
@@ -408,3 +343,67 @@ if __name__ == "__main__":
     main()
 
 
+#helper functions and other algorithms
+def naive_testing(s):
+    num = 0
+    stages = 1
+    new_s = np.zeros(len(s))
+    for i in range(len(s)):
+        if s[i] == 1:
+            new_s[i] = 1
+        num += 1
+    return num, stages, new_s
+
+
+def optimized_naive_testing(s):
+    # Fix test count
+    num = 0
+    stages = 1
+    positive_tests = 0
+    negative_tests = 0
+
+    proportion_of_positive_tests = sum(s)/len(s)
+    num+=1
+    
+    if(proportion_of_positive_tests <= 0.5):
+      new_s = np.zeros(len(s))
+      for i in range(len(s)):
+          if s[i] == 1:
+            new_s[i] = 1
+            positive_tests += 1
+          num+=1
+          if positive_tests==sum(s): break
+    else:
+      new_s = np.ones(len(s))
+      for i in range(len(s)):
+          if s[i] == 0:
+            new_s[i] = 0
+            negative_tests += 1
+          num+=1
+          if negative_tests==(len(s)-sum(s)): break
+
+    return num, stages, new_s
+
+
+def create_communities(N, M):
+    """
+    Function to create communities with approximately equal number of nodes.
+
+    Parameters:
+    N (int): Total number of nodes.
+    M (int): Number of communities.
+
+    Returns:
+    List[List[int]]: 2D array of indices for each community.
+    """
+    communities = []
+    nodes_per_community = N // M
+    extra_nodes = N % M
+
+    start = 0
+    for i in range(M):
+        end = start + nodes_per_community + (1 if i < extra_nodes else 0)
+        communities.append(list(range(start, end)))
+        start = end
+
+    return communities
