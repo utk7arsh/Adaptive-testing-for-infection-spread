@@ -20,7 +20,7 @@ def infect_step(G, p1, individuals, N):
         if individuals[i] == 1:  # If the individual is infected
             neighbors = np.where(G[i] == 1)[0]  # Find all neighbors
             for neighbor in neighbors:
-                if individuals[neighbor] == 0 and random.random() < p1:  # If neighbor is susceptible
+                if random.random() < p1:  # If neighbor is susceptible
                     individuals_updated[neighbor] = 1  # Infect the neighbor
     return individuals_updated
 
@@ -44,7 +44,6 @@ def infect(G, p0, p1, time_steps):
         infection_progression.append(individuals.copy())
 
     return infection_progression[time_steps]
-    # return infection_progression
 
 def plot_infection_progression(infection_progression):
     days = len(infection_progression)
@@ -57,23 +56,3 @@ def plot_infection_progression(infection_progression):
     plt.title('Infection Progression Over Time')
     plt.grid(True)
     plt.show()
-
-
-if __name__ == "__main__":
-    
-    N = 50
-    M = 5
-    q0 = 0.8
-    q1 = 0.05
-    G = SBM(N, M, q0, q1)
-
-    p0 = 0.1  # Initial infection probability
-    p1 = 0.1  # Probability of infection spread to neighbors
-    time_steps = 20  # Number of days to simulate the infection spread
-
-    infection_progression = infect(G, p0, p1, time_steps)
-            
-    for day, status in enumerate(infection_progression):
-        print(f"Day {day}: {np.sum(status)} infected")
-    
-    plot_infection_progression(infection_progression)
