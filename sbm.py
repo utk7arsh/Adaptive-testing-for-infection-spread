@@ -3,43 +3,39 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 def SBM(N, M, q0, q1):
-    """
-    This function is designed to generate the Stochastic Block Model.
+    '''This function is designed to generate the Stochastic Block Model.
+    input params (consistent with the project description):
+    N (int): the number of individuals
+    M (int): the number of subgroups
+    q0 (float): probability of intra-subgroup connection
+    q1 (float): probability of inter-subgroup connection
 
-    Parameters:
-    N (int): The number of individuals
-    M (int): The number of subgroups
-    q0 (float): Probability of intra-subgroup connection
-    q1 (float): Probability of inter-subgroup connection
-
-    Returns:
-    np.ndarray: Adjacency matrix of the generated graph
-    """
-
+    output:
+    G (N*N): adjacency matrix of the generated graph
+    '''
+    # Initialize the adjacency matrix with zeros
     G = np.zeros((N, N))
-
-    # Generate node indices and split them into subgroups...
-    nodes = np.arange(N)
-    communities = np.array_split(nodes, M)
-
-    # Iterate over communities to create connections.
+    
+    # Determine the size of each subgroup (almost equal size)
+    sizes = [N // M + (1 if i < N % M else 0) for i in range(M)]
+    
+    # Compute the starting index of each subgroup
+    indices = np.cumsum([0] + sizes)
+    
+    # Fill in the adjacency matrix
     for i in range(M):
-        comm1 = communities[i]
         for j in range(i, M):
-            comm2 = communities[j]
-
             if i == j:
-                # Generate intra-community connections
-                if q0 > 0:
-                    intra_block = np.random.choice([0, 1], size=(comm1.size, comm1.size), p=[1 - q0, q0])
-                    G[np.ix_(comm1, comm1)] = np.triu(intra_block, 1) + np.triu(intra_block, 1).T
+                # Intra-subgroup connections
+                G[indices[i]:indices[i+1], indices[j]:indices[j+1]] = np.random.rand(sizes[i], sizes[j]) < q0
             else:
-                # Generate inter-community connections
-                if q1 > 0:
-                    inter_block = np.random.choice([0, 1], size=(comm1.size, comm2.size), p=[1 - q1, q1])
-                    G[np.ix_(comm1, comm2)] = inter_block
-                    G[np.ix_(comm2, comm1)] = inter_block.T
-
+                # Inter-subgroup connections
+                G[indices[i]:indices[i+1], indices[j]:indices[j+1]] = np.random.rand(sizes[i], sizes[j]) < q1
+                G[indices[j]:indices[j+1], indices[i]:indices[i+1]] = G[indices[i]:indices[i+1], indices[j]:indices[j+1]].T
+    
+    # Ensure the diagonal elements are zero (no self-loops)
+    np.fill_diagonal(G, 0)
+    
     return G
 
 
@@ -61,14 +57,3 @@ def visualize_graph(G):
     nx.draw(graph, pos, with_labels=True, node_color='skyblue', node_size=500, edge_color='gray', linewidths=1, font_size=15)
     plt.title("Visualization of Stochastic Block Model (SBM) Graph")
     plt.show()
-
-
-if __name__ == "__main__":
-    N = 50  # Total number of nodes
-    M = 5    # Number of communities
-    q0 = 1 # Intra-community connection probability
-    q1 = 0 # Inter-community connection probability
-
-    G = SBM(N, M, q0, q1)
-    print(G)   # in latest networkx documentation, using print(G) works same as print(nx.info(G))
-    visualize_graph(G)
