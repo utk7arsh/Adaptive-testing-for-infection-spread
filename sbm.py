@@ -67,10 +67,8 @@ if __name__ == "__main__":
     N = 50  # Total number of nodes
     M = 5    # Number of communities
     q0 = 1 # Intra-community connection probability
-    q1 = 0.1 # Inter-community connection probability
+    q1 = 0 # Inter-community connection probability
 
     G = SBM(N, M, q0, q1)
-    
-    graph = nx.from_numpy_array(G)
-    print(graph)
+    print(G)   # in latest networkx documentation, using print(G) works same as print(nx.info(G))
     visualize_graph(G)
