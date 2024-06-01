@@ -52,8 +52,8 @@ def visualize_graph(G):
     graph = nx.from_numpy_array(G)
 
     # Draw the graph
-    plt.figure(figsize=(6, 6))  # Further reduced the figure size
+    plt.figure(figsize=(2, 2))  # Further reduced the figure size
     pos = nx.spring_layout(graph, seed=42)  # Position nodes using a spring layout
-    nx.draw(graph, pos, with_labels=True, node_color='skyblue', node_size=100, edge_color='gray', linewidths=0.5, font_size=8)
+    nx.draw(graph, pos, with_labels=True, node_color='skyblue', node_size=200, edge_color='gray', linewidths=0.75, font_size=7)
     plt.title("Visualization of Stochastic Block Model (SBM) Graph")
     plt.show()
