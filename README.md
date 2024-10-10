@@ -67,4 +67,4 @@ p1.
 
 
 
-*Prepared By Utkarsh Lal and Anirudh Krishna for Final Project of ECE 134: Graph Theory and its applications in Engineering*
+*Prepared By Utkarsh Lal and Anirudh Krishna
